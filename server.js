@@ -1,16 +1,32 @@
+const express = require('express');
 const puppeteer = require('puppeteer');
 const ExcelJS = require('exceljs');
+const path = require('path');
 
-(async () => {
+const app = express();
+const port = 3000;
+
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+
+let isScraping = false;
+let fileGenerated = false;
+
+app.get('/', (req, res) => {
+  res.render('index', { isScraping, fileGenerated });
+});
+
+app.post('/scrape', async (req, res) => {
+  const url = req.body.url;
+  isScraping = true;
+  fileGenerated = false;
+
   try {
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-
-    // URL сайта, который вы хотите спарсить
-    const url = 'https://prozorro.gov.ua/uk/search/tender?cpv=15500000-3&page=500';
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Извлечение данных
     const data = await page.evaluate(() => {
       const results = [];
       let currentItem = {};
@@ -22,31 +38,24 @@ const ExcelJS = require('exceljs');
         const id = idElement ? idElement.innerText.trim().replace('ID: ', '') : '';
         const price = element.querySelector('.app-price__amount')?.innerText.trim() || '';
 
-        // Проверяем статус завершенности
         const statusElement = element.querySelector('.search-result-card__label span');
         const completed = statusElement ? statusElement.innerText.trim() : '';
 
-        // Логируем статус для отладки
-        console.log(`Status text: "${completed}"`);
-
-        // Если title и description присутствуют, создаем новый объект
         if (title && description) {
           if (currentItem.title) {
-            results.push(currentItem); // Добавляем предыдущий объект в результат
+            results.push(currentItem);
           }
-          currentItem = { title, description, id, completed, price }; // Создаем новый объект
+          currentItem = { title, description, id, completed, price };
         } else {
-          // Обработка ситуации, когда часть данных (например, цена) может быть в другом месте
           if (price) {
-            currentItem.price = price; // Обновляем цену текущего объекта
+            currentItem.price = price;
           }
           if (completed && currentItem.title) {
-            currentItem.completed = completed; // Обновляем статус завершенности текущего объекта
+            currentItem.completed = completed;
           }
         }
       });
 
-      // Добавляем последний объект, если он существует
       if (currentItem.title) {
         results.push(currentItem);
       }
@@ -56,11 +65,9 @@ const ExcelJS = require('exceljs');
 
     await browser.close();
 
-    // Создаем новый Excel-файл
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Data');
 
-    // Добавляем заголовки в таблицу
     worksheet.columns = [
       { header: 'Title', key: 'title', width: 30 },
       { header: 'Price', key: 'price', width: 20 },
@@ -69,16 +76,21 @@ const ExcelJS = require('exceljs');
       { header: 'Completed', key: 'completed', width: 25 }
     ];
 
-    // Добавляем данные в Excel-файл
-    data.forEach((row, index) => {
-      console.log(`Adding row ${index + 1}:`, row); // Для отладки
+    data.forEach((row) => {
       worksheet.addRow(row);
     });
 
-    // Сохраняем Excel-файл
-    await workbook.xlsx.writeFile('data.xlsx');
-    console.log('Data has been saved to data.xlsx');
+    await workbook.xlsx.writeFile('public/data.xlsx');
+    fileGenerated = true;
+    isScraping = false;
   } catch (error) {
     console.error('Error:', error.message);
+    isScraping = false;
   }
-})();
+
+  res.redirect('/');
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});

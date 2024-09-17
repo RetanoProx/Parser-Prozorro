@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсер Prozorro</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Парсер Prozorro</h1>
+        <form action="/scrape" method="POST">
+            <label for="url">Введите ссылку на страницу для парсинга:</label>
+            <input type="text" id="url" name="url" placeholder="https://prozorro.gov.ua/uk/search/tender?cpv=15500000-3&page=500" required>
+            <button type="submit" id="start-btn">Почати</button>
+        </form>
+
+        <div id="status">
+            <% if (isScraping) { %>
+                <p>В процесі...</p>
+            <% } else { %>
+                <p>Готова до роботи</p>
+            <% } %>
+        </div>
+
+        <% if (fileGenerated) { %>
+            <a href="/data.xlsx" download>Скачать файл</a>
+        <% } %>
+    </div>
+</body>
+</html>
