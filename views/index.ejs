@@ -3,36 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Парсер даних</title>
+    <title>Парсер</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        #currentPage {
+            display: none; /* Спочатку приховуємо */
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Парсер даних Prozorro</h1>
         
-        <!-- Форма для ввода данных -->
+        <!-- Форма для введення даних -->
         <form id="scrapeForm" action="/scrape" method="POST">
-            <label for="url">URL для парсинга:</label>
-            <input type="text" id="url" name="url" placeholder="Введите URL" required>
+            <label for="url">URL для парсингу:</label>
+            <input type="text" id="url" name="url" placeholder="Введіть URL" required>
 
-            <label for="pages">Количество страниц для парсинга:</label>
+            <label for="pages">Кількість сторінок для парсингу:</label>
             <select id="pages" name="pages">
-                <option value="1">Спарсить текущую страницу</option>
-                <option value="10">10 страниц</option>
-                <option value="50">50 страниц</option>
-                <option value="100">100 страниц</option>
-                <option value="all">До последней страницы</option>
+                <option value="1">Спарсити поточну сторінку</option>
+                <option value="10">10 сторінок</option>
+                <option value="50">50 сторінок</option>
+                <option value="100">100 сторінок</option>
+                <option value="all">До останньої сторінки</option>
             </select>
 
             <button type="submit" id="startButton">Почати</button>
         </form>
 
-        <!-- Индикатор работы -->
+        <!-- Індикатор роботи -->
         <div id="status">
             Готова до роботи
         </div>
 
-        <!-- Кнопка для загрузки файла -->
+        <!-- Поточна сторінка -->
+        <div id="currentPage">
+            Оброблено сторінок: 0
+        </div>
+
+        <!-- Кнопка для завантаження файлу -->
         <form action="/download" method="get">
             <button type="submit" id="downloadButton" disabled>Завантажити файл</button>
         </form>
@@ -42,20 +52,31 @@
         const form = document.getElementById('scrapeForm');
         const status = document.getElementById('status');
         const downloadButton = document.getElementById('downloadButton');
+        const currentPage = document.getElementById('currentPage');
 
         form.addEventListener('submit', () => {
             status.innerText = 'В процесі...';
             downloadButton.disabled = true;
         });
 
-        fetch('/status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'done') {
-                    status.innerText = 'Готова до роботи';
-                    downloadButton.disabled = false;
-                }
-            });
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'done') {
+                        status.innerText = 'Готова до роботи';
+                        downloadButton.disabled = false;
+                        currentPage.style.display = 'none'; // Приховуємо поточну сторінку
+                    } else if (data.status === 'working') {
+                        status.innerText = 'В процесі...';
+                        currentPage.style.display = 'block'; // Показуємо поточну сторінку
+                    }
+                    currentPage.innerText = `Оброблено сторінок: ${data.currentPage}`;
+                });
+        }
+
+        // Оновлюємо статус і поточну сторінку кожні 2 секунди
+        setInterval(updateStatus, 2000);
     </script>
 </body>
 </html>

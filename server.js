@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 const port = 3000;
-let scrapingStatus = 'ready';
+let scrapingStatus = { status: 'ready', currentPage: 0 };
 
 // Middleware для работы с JSON и формами
 app.use(express.urlencoded({ extended: true }));
@@ -20,13 +20,13 @@ app.get('/', (req, res) => {
 
 // Обработчик статуса
 app.get('/status', (req, res) => {
-  res.json({ status: scrapingStatus });
+  res.json(scrapingStatus);
 });
 
 // Обработчик формы парсинга
 app.post('/scrape', async (req, res) => {
   const { url, pages } = req.body;
-  scrapingStatus = 'working';
+  scrapingStatus = { status: 'working', currentPage: 0 };
 
   try {
     // Функция для парсинга нескольких страниц
@@ -39,6 +39,7 @@ app.post('/scrape', async (req, res) => {
 
     // Определяем, сколько страниц парсить
     while (pages === 'all' || currentPage <= parseInt(pages)) {
+      scrapingStatus.currentPage = currentPage; // Обновляем текущую страницу
       console.log(`Scraping page ${currentPage}...`);
 
       // Парсинг текущей страницы
@@ -58,11 +59,11 @@ app.post('/scrape', async (req, res) => {
     await browser.close();
     await saveDataToExcel(allData);
 
-    scrapingStatus = 'done';
+    scrapingStatus = { status: 'done', currentPage: currentPage - 1 }; // Обновляем статус
     res.redirect('/');
   } catch (error) {
     console.error('Error:', error.message);
-    scrapingStatus = 'ready';
+    scrapingStatus = { status: 'ready', currentPage: 0 }; // Сбрасываем статус
     res.redirect('/');
   }
 });
@@ -126,7 +127,7 @@ async function saveDataToExcel(data) {
   ];
 
   data.forEach((row, index) => {
-    console.log(`Adding row ${index + 1}:`, row);
+    // console.log(`Adding row ${index + 1}:`, row);
     worksheet.addRow(row);
   });
 
