@@ -3,29 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Парсер Prozorro</title>
+    <title>Парсер даних</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Парсер Prozorro</h1>
-        <form action="/scrape" method="POST">
-            <label for="url">Введите ссылку на страницу для парсинга:</label>
-            <input type="text" id="url" name="url" placeholder="https://prozorro.gov.ua/uk/search/tender?cpv=15500000-3&page=500" required>
-            <button type="submit" id="start-btn">Почати</button>
+        <h1>Парсер даних Prozorro</h1>
+        
+        <!-- Форма для ввода данных -->
+        <form id="scrapeForm" action="/scrape" method="POST">
+            <label for="url">URL для парсинга:</label>
+            <input type="text" id="url" name="url" placeholder="Введите URL" required>
+
+            <label for="pages">Количество страниц для парсинга:</label>
+            <select id="pages" name="pages">
+                <option value="1">Спарсить текущую страницу</option>
+                <option value="10">10 страниц</option>
+                <option value="50">50 страниц</option>
+                <option value="100">100 страниц</option>
+                <option value="all">До последней страницы</option>
+            </select>
+
+            <button type="submit" id="startButton">Почати</button>
         </form>
 
+        <!-- Индикатор работы -->
         <div id="status">
-            <% if (isScraping) { %>
-                <p>В процесі...</p>
-            <% } else { %>
-                <p>Готова до роботи</p>
-            <% } %>
+            Готова до роботи
         </div>
 
-        <% if (fileGenerated) { %>
-            <a href="/data.xlsx" download>Скачать файл</a>
-        <% } %>
+        <!-- Кнопка для загрузки файла -->
+        <form action="/download" method="get">
+            <button type="submit" id="downloadButton" disabled>Завантажити файл</button>
+        </form>
     </div>
+
+    <script>
+        const form = document.getElementById('scrapeForm');
+        const status = document.getElementById('status');
+        const downloadButton = document.getElementById('downloadButton');
+
+        form.addEventListener('submit', () => {
+            status.innerText = 'В процесі...';
+            downloadButton.disabled = true;
+        });
+
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'done') {
+                    status.innerText = 'Готова до роботи';
+                    downloadButton.disabled = false;
+                }
+            });
+    </script>
 </body>
 </html>
