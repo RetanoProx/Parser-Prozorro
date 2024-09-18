@@ -7,29 +7,29 @@ const app = express();
 const port = 3000;
 let scrapingStatus = { status: 'ready', currentPage: 0 };
 
-// Middleware для работы с JSON и формами
+// Middleware для роботи з JSON та формами
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
-// Рендер главной страницы
+// Рендер головної сторінки
 app.get('/', (req, res) => {
   res.render('index');
 });
 
-// Обработчик статуса
+// Обробник статусу
 app.get('/status', (req, res) => {
   res.json(scrapingStatus);
 });
 
-// Обработчик формы парсинга
+// Обробник форми парсингу
 app.post('/scrape', async (req, res) => {
   const { url, pages } = req.body;
   scrapingStatus = { status: 'working', currentPage: 0 };
 
   try {
-    // Функция для парсинга нескольких страниц
+    // Функція для парсингу декількох сторінок
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
@@ -37,21 +37,21 @@ app.post('/scrape', async (req, res) => {
     let allData = [];
     let currentPage = 1;
 
-    // Определяем, сколько страниц парсить
+    // Визначаємо, скільки сторінок парсити
     while (pages === 'all' || currentPage <= parseInt(pages)) {
-      scrapingStatus.currentPage = currentPage; // Обновляем текущую страницу
+      scrapingStatus.currentPage = currentPage; // Оновлюємо поточну сторінку
       console.log(`Scraping page ${currentPage}...`);
 
-      // Парсинг текущей страницы
+      // Парсинг поточної сторінки
       const pageData = await scrapePage(page);
       allData = allData.concat(pageData);
 
       const nextPageBtn = await page.$('.paginate__btn.next');
-      if (!nextPageBtn || (pages !== 'all' && currentPage === parseInt(pages))) break; // Если кнопки для следующей страницы нет или достигли лимита страниц
+      if (!nextPageBtn || (pages !== 'all' && currentPage === parseInt(pages))) break; // Якщо кнопки для наступної сторінки немає або досягли ліміту сторінок
 
-      // Переход на следующую страницу и ожидание
+      // Перехід на наступну сторінку та очікування
       await nextPageBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Ждем загрузки новой страницы
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Чекаємо завантаження нової сторінки
 
       currentPage++;
     }
@@ -59,22 +59,22 @@ app.post('/scrape', async (req, res) => {
     await browser.close();
     await saveDataToExcel(allData);
 
-    scrapingStatus = { status: 'done', currentPage: currentPage - 1 }; // Обновляем статус
+    scrapingStatus = { status: 'done', currentPage: currentPage - 1 }; // Оновлюємо статус
     res.redirect('/');
   } catch (error) {
     console.error('Error:', error.message);
-    scrapingStatus = { status: 'ready', currentPage: 0 }; // Сбрасываем статус
+    scrapingStatus = { status: 'ready', currentPage: 0 }; // Скидаємо статус
     res.redirect('/');
   }
 });
 
-// Обработчик загрузки Excel-файла
+// Обробник завантаження Excel-файлу
 app.get('/download', (req, res) => {
   const file = path.join(__dirname, 'data.xlsx');
   res.download(file);
 });
 
-// Функция для парсинга одной страницы
+// Функція для парсингу однієї сторінки
 async function scrapePage(page) {
   return await page.evaluate(() => {
     const results = [];
@@ -113,7 +113,7 @@ async function scrapePage(page) {
   });
 }
 
-// Функция для сохранения данных в Excel
+// Функція для збереження даних в Excel
 async function saveDataToExcel(data) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Data');
@@ -135,7 +135,7 @@ async function saveDataToExcel(data) {
   console.log('Data has been saved to data.xlsx');
 }
 
-// Запуск сервера
+// Запуск серверу
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
